@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="ChronoContrat" />
+  <meta name="theme-color" content="#080d18" />
+  <title>ChronoContrat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: #0a0f1e; color: #e2e8f0; font-family: 'DM Mono', 'Fira Code', 'Courier New', monospace; font-size: 15px; -webkit-tap-highlight-color: transparent; }
+    input[type="time"] {
+      background: #111827; border: 1px solid #1e293b; border-radius: 6px;
+      color: #e2e8f0; padding: 7px 10px; font-family: 'DM Mono', monospace;
+      font-size: 14px; width: 100%; transition: border-color .2s; -webkit-appearance: none;
+    }
+    input[type="time"]:focus { outline: none; border-color: #f59e0b; }
+    input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
+    .btn { cursor: pointer; border: none; font-family: 'Syne', sans-serif; font-weight: 700; border-radius: 8px; transition: all .18s; }
+    .tab { padding: 8px 18px; font-size: 13px; letter-spacing: .04em; }
+    .tab.active { background: #f59e0b; color: #0a0f1e; }
+    .tab.inactive { background: transparent; color: #64748b; border: 1px solid #1e293b; }
+    .tab.inactive:active { border-color: #f59e0b; color: #f59e0b; }
+    .btn-danger { background: #7f1d1d; color: #fca5a5; border: 1px solid #991b1b; padding: 7px 14px; font-size: 13px; }
+    .btn-danger:active { background: #991b1b; }
+    .btn-ghost { background: transparent; color: #64748b; border: 1px solid #1e293b; padding: 7px 14px; font-size: 13px; }
+    .btn-ghost:active { border-color: #475569; color: #94a3b8; }
+    .card { background: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 16px; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; font-family: 'DM Mono', monospace; }
+    .chip-ok   { background: #14532d44; color: #4ade80; border: 1px solid #166534; }
+    .chip-warn { background: #78350f44; color: #fbbf24; border: 1px solid #92400e; }
+    .chip-err  { background: #7f1d1d44; color: #f87171; border: 1px solid #991b1b; }
+    .chip-info { background: #1e3a5f44; color: #60a5fa; border: 1px solid #1d4ed8; }
+    .label-small { font-size: 10px; color: #475569; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
+    .progress-bar { height: 8px; background: #1e293b; border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 4px; transition: width .6s ease; }
+    .suggest { font-size: 11px; color: #f59e0b; margin-top: 3px; }
+    .hidden { display: none !important; }
+    .flex { display: flex; }
+    .flex-col { flex-direction: column; }
+    .flex-wrap { flex-wrap: wrap; }
+    .gap-8 { gap: 8px; }
+    .gap-10 { gap: 10px; }
+    .gap-12 { gap: 12px; }
+    .gap-14 { gap: 14px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
+    .grid-jour { display: grid; grid-template-columns: 82px 1fr; gap: 12px; align-items: start; }
+    .text-center { text-align: center; }
+    .mt-4 { margin-top: 4px; }
+    .mt-6 { margin-top: 6px; }
+    .mt-8 { margin-top: 8px; }
+    .mt-10 { margin-top: 10px; }
+    .mt-12 { margin-top: 12px; }
+    .mt-14 { margin-top: 14px; }
+    .mb-6 { margin-bottom: 6px; }
+    .mb-8 { margin-bottom: 8px; }
+    .mb-10 { margin-bottom: 10px; }
+    .mb-14 { margin-bottom: 14px; }
+    #app { display: flex; flex-direction: column; min-height: 100vh; }
+    header { border-bottom: 1px solid #1e293b; padding: 16px 18px 14px; background: #080d18; position: sticky; top: 0; z-index: 10; }
+    .header-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .logo { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: #fff; }
+    .logo span { color: #f59e0b; }
+    .logo-sub { font-size: 10px; color: #475569; margin-top: 2px; }
+    .week-info { text-align: right; }
+    .week-status { font-size: 10px; color: #475569; }
+    .week-status.old { color: #f59e0b; }
+    .week-label { font-size: 11px; color: #94a3b8; font-family: 'Syne', sans-serif; font-weight: 700; }
+    #save-flash { font-size: 10px; transition: opacity .4s; }
+    #banner-newweek { margin-top: 10px; padding: 10px 14px; background: #1a1100; border: 1px solid #92400e; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+    #banner-newweek span { font-size: 12px; color: #fbbf24; }
+    main { flex: 1; max-width: 860px; width: 100%; margin: 0 auto; padding: 18px 14px 40px; }
+    .tabs-row { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; align-items: center; }
+    .section { display: flex; flex-direction: column; gap: 12px; }
+    /* Jour card */
+    .jour-nom { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; color: #fff; }
+    .jour-total { font-size: 18px; font-weight: 500; margin-top: 4px; }
+    .jour-cible { font-size: 10px; color: #475569; }
+    /* Timeline */
+    .timeline-wrap { position: relative; height: 72px; }
+    .tl-bg { position: absolute; top: 24px; left: 0; right: 0; height: 16px; background: #1e293b; border-radius: 4px; }
+    .tl-layer { position: absolute; top: 24px; height: 16px; border-radius: 2px; }
+    .tl-marker { position: absolute; top: 16px; transform: translateX(-50%); }
+    .tl-marker-line { width: 2px; height: 28px; margin: 0 auto; }
+    .tl-marker-label { font-size: 9px; text-align: center; white-space: nowrap; }
+    .tl-hour { position: absolute; top: 44px; transform: translateX(-50%); font-size: 9px; color: #334155; }
+    .tl-legend { position: absolute; bottom: -2px; right: 0; display: flex; gap: 10px; font-size: 10px; color: #475569; }
+    @media (max-width: 500px) {
+      .grid-4 { grid-template-columns: 1fr 1fr; }
+      .grid-jour { grid-template-columns: 72px 1fr; gap: 10px; }
+    }
+    @keyframes fadeFlash { 0%{opacity:0} 15%{opacity:1} 80%{opacity:1} 100%{opacity:0} }
+    .flash-anim { animation: fadeFlash 1.4s ease forwards; }
+    @keyframes slideDown { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+    .slide-down { animation: slideDown .2s ease; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <!-- HEADER -->
+  <header>
+    <div class="header-top">
+      <div>
+        <div class="logo">⏱ Chrono<span>Contrat</span></div>
+        <div class="logo-sub">Contrat 39h · Présence 09:30–12:00 et 14:00–16:30</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="week-info">
+          <div class="week-status" id="week-status-label">📅 Semaine en cours</div>
+          <div class="week-label" id="week-label-text">—</div>
+        </div>
+        <span class="badge chip-ok hidden" id="save-flash">✓ sauvegardé</span>
+      </div>
+    </div>
+    <div id="banner-newweek" class="hidden slide-down">
+      <span>📅 Nouvelle semaine détectée — réinitialiser ?</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-danger" id="btn-banner-reset">Nouvelle semaine</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main>
+    <!-- Tabs -->
+    <div class="tabs-row">
+      <button class="btn tab active" id="tab-semaine" onclick="switchMode('semaine')">Vue Semaine</button>
+      <button class="btn tab inactive" id="tab-jour" onclick="switchMode('jour')">Vue Journée</button>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+        <button class="btn btn-ghost" id="btn-reset-show" style="font-size:12px;" onclick="showResetConfirm()">↺ Réinitialiser</button>
+        <div id="reset-confirm" class="hidden slide-down" style="display:flex;gap:8px;align-items:center;">
+          <span style="font-size:11px;color:#f87171;">Effacer ?</span>
+          <button class="btn btn-danger" onclick="doReset()">Oui</button>
+          <button class="btn btn-ghost" onclick="hideResetConfirm()">Non</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VUE SEMAINE -->
+    <div id="view-semaine" class="section"></div>
+
+    <!-- VUE JOURNÉE -->
+    <div id="view-jour" class="section hidden"></div>
+  </main>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONSTANTES
+// ═══════════════════════════════════════════════════════════
+const JOURS = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi"];
+const CIBLE_SEMAINE = 39 * 60;
+const CIBLE_JOUR = Math.round((39 * 60) / 5); // 468 min
+const PLAGES = [
+  { label: "Présence matin", debut: "09:30", fin: "12:00" },
+  { label: "Présence après-midi", debut: "14:00", fin: "16:30" },
+];
+const LS_KEY = "chronocontrat_v2";
+
+// ═══════════════════════════════════════════════════════════
+// ÉTAT
+// ═══════════════════════════════════════════════════════════
+let mode = "semaine";
+let jourSeulIndex = 0;
+let resetConfirmVisible = false;
+let flashTimer = null;
+
+const defaultJour = () => ({ arrivee:"", depart:"", pauseDebut:"12:00", pauseFin:"13:00" });
+const defaultSemaine = () => JOURS.map(() => defaultJour());
+
+let state = {
+  weekKey: getISOWeekKey(),
+  jours: defaultSemaine(),
+};
+
+// ═══════════════════════════════════════════════════════════
+// UTILS TEMPS
+// ═══════════════════════════════════════════════════════════
+function toMin(hhmm) {
+  if (!hhmm) return null;
+  const [h,m] = hhmm.split(":").map(Number);
+  return h*60+m;
+}
+function toHHMM(min) {
+  if (min===null||isNaN(min)) return "--:--";
+  const h=Math.floor(Math.abs(min)/60), m=Math.abs(min)%60;
+  return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
+}
+function fmtDur(min, sign=false) {
+  if (min===null||isNaN(min)) return "--";
+  const s = min<0 ? "-" : (sign&&min>0 ? "+" : "");
+  const h=Math.floor(Math.abs(min)/60), m=Math.abs(min)%60;
+  return s+h+"h"+String(m).padStart(2,"0");
+}
+function calcJour(j) {
+  const a=toMin(j.arrivee), d=toMin(j.depart);
+  if (a===null||d===null||d<=a) return null;
+  const pb=toMin(j.pauseDebut), pf=toMin(j.pauseFin);
+  const pause = pb!==null&&pf!==null&&pf>pb ? pf-pb : 0;
+  return d-a-pause;
+}
+function checkPlages(j) {
+  const a=toMin(j.arrivee), d=toMin(j.depart);
+  const pb=toMin(j.pauseDebut), pf=toMin(j.pauseFin);
+  return PLAGES.filter(p=>{
+    const pD=toMin(p.debut), pF=toMin(p.fin);
+    if (a===null||d===null) return true;
+    let ap=0;
+    if (pb!==null&&pf!==null) { const cd=Math.max(pb,pD),cf=Math.min(pf,pF); if(cf>cd)ap=cf-cd; }
+    return Math.min(d,pF)-Math.max(a,pD)-ap < pF-pD;
+  }).map(p=>p.label);
+}
+function suggestDepart(j, cible=CIBLE_JOUR) {
+  const a=toMin(j.arrivee); if(a===null) return null;
+  const pb=toMin(j.pauseDebut), pf=toMin(j.pauseFin);
+  const pause = pb!==null&&pf!==null&&pf>pb ? pf-pb : 60;
+  return a+cible+pause;
+}
+function statusColor(delta) {
+  if (delta===null) return "#64748b";
+  if (Math.abs(delta)<5) return "#22c55e";
+  if (delta>0) return "#3b82f6";
+  return "#ef4444";
+}
+
+// ═══════════════════════════════════════════════════════════
+// SEMAINE ISO
+// ═══════════════════════════════════════════════════════════
+function getISOWeekKey(date=new Date()) {
+  const d=new Date(date); d.setHours(0,0,0,0);
+  d.setDate(d.getDate()+4-(d.getDay()||7));
+  const y=d.getFullYear(), ys=new Date(y,0,1);
+  const w=Math.ceil(((d-ys)/86400000+1)/7);
+  return y+"-W"+String(w).padStart(2,"0");
+}
+function formatWeekLabel(key) {
+  const [year,wp]=key.split("-W");
+  const w=parseInt(wp), y=parseInt(year);
+  const jan4=new Date(y,0,4);
+  const sow=new Date(jan4);
+  sow.setDate(jan4.getDate()-(jan4.getDay()||7)+1+(w-1)*7);
+  const end=new Date(sow); end.setDate(sow.getDate()+4);
+  const fmt=d=>d.toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
+  return "Sem. "+w+" · "+fmt(sow)+" – "+fmt(end)+" "+year;
+}
+
+// ═══════════════════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════════════════
+function loadState() {
+  try {
+    const raw=localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const s=JSON.parse(raw);
+    if (s.weekKey) state.weekKey=s.weekKey;
+    if (s.jours&&s.jours.length===5) state.jours=s.jours;
+  } catch(e){}
+}
+function saveState() {
+  try { localStorage.setItem(LS_KEY,JSON.stringify(state)); } catch(e){}
+  // Flash
+  const el=document.getElementById("save-flash");
+  el.classList.remove("hidden","flash-anim");
+  void el.offsetWidth;
+  el.classList.add("flash-anim");
+  clearTimeout(flashTimer);
+  flashTimer=setTimeout(()=>el.classList.add("hidden"),1500);
+}
+
+// ═══════════════════════════════════════════════════════════
+// RESET
+// ═══════════════════════════════════════════════════════════
+function showResetConfirm() {
+  document.getElementById("reset-confirm").classList.remove("hidden");
+  document.getElementById("btn-reset-show").classList.add("hidden");
+}
+function hideResetConfirm() {
+  document.getElementById("reset-confirm").classList.add("hidden");
+  document.getElementById("btn-reset-show").classList.remove("hidden");
+}
+function doReset() {
+  state.jours=defaultSemaine();
+  state.weekKey=getISOWeekKey();
+  saveState();
+  hideResetConfirm();
+  updateHeader();
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODE
+// ═══════════════════════════════════════════════════════════
+function switchMode(m) {
+  mode=m;
+  document.getElementById("tab-semaine").className="btn tab "+(m==="semaine"?"active":"inactive");
+  document.getElementById("tab-jour").className="btn tab "+(m==="jour"?"active":"inactive");
+  document.getElementById("view-semaine").classList.toggle("hidden",m!=="semaine");
+  document.getElementById("view-jour").classList.toggle("hidden",m!=="jour");
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════
+// HEADER
+// ═══════════════════════════════════════════════════════════
+function updateHeader() {
+  const curKey=getISOWeekKey();
+  const isOld=state.weekKey!==curKey;
+  document.getElementById("week-label-text").textContent=formatWeekLabel(state.weekKey);
+  const ws=document.getElementById("week-status-label");
+  ws.textContent=isOld?"⚠ Ancienne semaine":"📅 Semaine en cours";
+  ws.className="week-status"+(isOld?" old":"");
+  const banner=document.getElementById("banner-newweek");
+  if (isOld) banner.classList.remove("hidden"); else banner.classList.add("hidden");
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER SEMAINE
+// ═══════════════════════════════════════════════════════════
+function renderSemaine() {
+  const totaux=state.jours.map(calcJour);
+  const total=totaux.reduce((a,t)=>t!==null?a+t:a,0);
+  const delta=total-CIBLE_SEMAINE;
+  const faits=totaux.filter(t=>t!==null).length;
+  const restants=5-faits;
+  const minRestantes=CIBLE_SEMAINE-total;
+  const moy=restants>0?Math.ceil(minRestantes/restants):0;
+  const pct=Math.min(100,(total/CIBLE_SEMAINE)*100);
+  const pctColor=pct>=100?"#22c55e":pct>=70?"#f59e0b":"#3b82f6";
+  const deltaChip=delta===0?'chip-ok':delta>0?'chip-info':'chip-err';
+  const deltaLabel=delta===0?"Objectif atteint ✓":delta>0?`+${fmtDur(delta)} en avance`:`${fmtDur(delta,true)} à rattraper`;
+
+  let html=`
+  <div class="card" style="padding:18px 22px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+      <div>
+        <div class="label-small">TOTAL SEMAINE</div>
+        <div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:#fff;">
+          ${fmtDur(total)}<span style="font-size:14px;color:#475569;margin-left:8px;">/ 39h00</span>
+        </div>
+      </div>
+      <span class="badge ${deltaChip}">${deltaLabel}</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${pctColor};"></div></div>
+    <div style="display:flex;justify-content:space-between;margin-top:7px;font-size:11px;color:#475569;">
+      <span>${Math.round(pct)}% accompli</span>
+      ${restants>0&&minRestantes>0?`<span>→ ~${fmtDur(moy)}/jour sur ${restants} jour${restants>1?"s":""} restant${restants>1?"s":""}</span>`:""}
+    </div>
+  </div>`;
+
+  JOURS.forEach((nom,i)=>{
+    const j=state.jours[i];
+    const tot=totaux[i];
+    const dj=tot!==null?tot-CIBLE_JOUR:null;
+    const issues=checkPlages(j);
+    const suggest=suggestDepart(j, restants>0&&tot===null?moy:CIBLE_JOUR);
+    const sc=statusColor(dj);
+
+    html+=`
+    <div class="card" style="border-left:3px solid ${tot!==null?sc:"#1e293b"};">
+      <div class="grid-jour">
+        <div>
+          <div class="jour-nom">${nom}</div>
+          ${tot!==null?`
+            <div class="jour-total" style="color:${sc};">${fmtDur(tot)}</div>
+            <div class="jour-cible">/ ${fmtDur(CIBLE_JOUR)}</div>
+            ${Math.abs(dj)>=5?`<span class="badge ${dj>0?"chip-info":"chip-err"}" style="margin-top:4px;font-size:10px;">${fmtDur(dj,true)}</span>`:""}
+          `:`<div style="font-size:10px;color:#334155;margin-top:4px;">—</div>`}
+        </div>
+        <div>
+          <div class="grid-4" style="margin-bottom:8px;">
+            ${["arrivee","pauseDebut","pauseFin","depart"].map((field,fi)=>{
+              const labels=["Arrivée","Pause ↓","Pause ↑","Départ"];
+              const warn=field==="arrivee"&&j.arrivee&&toMin(j.arrivee)>toMin("09:30")?`<div style="font-size:9px;color:#f87171;margin-top:2px;">Après 09:30</div>`:"";
+              const sug=field==="depart"&&j.arrivee&&!j.depart&&suggest?`<div class="suggest">→ ${toHHMM(suggest)}</div>`:"";
+              return `<div>
+                <div class="label-small">${labels[fi]}</div>
+                <input type="time" value="${j[field]}" onchange="updateField(${i},'${field}',this.value)" />
+                ${warn}${sug}
+              </div>`;
+            }).join("")}
+          </div>
+          ${issues.length>0&&j.arrivee?`<div style="display:flex;gap:6px;flex-wrap:wrap;">${issues.map(iss=>`<span class="badge chip-warn" style="font-size:10px;">⚠ ${iss}</span>`).join("")}</div>`:""}
+        </div>
+      </div>
+    </div>`;
+  });
+
+  const recapItems=[
+    {label:"Heures faites",val:fmtDur(total),color:"#fff"},
+    {label:"Restant",val:minRestantes>0?fmtDur(minRestantes):"0h00",color:minRestantes>0?"#f59e0b":"#22c55e"},
+    {label:"Solde semaine",val:fmtDur(delta,true),color:statusColor(delta)},
+  ];
+  html+=`<div class="grid-3">${recapItems.map(r=>`
+    <div class="card text-center">
+      <div style="font-size:10px;color:#475569;margin-bottom:5px;">${r.label}</div>
+      <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:${r.color};">${r.val}</div>
+    </div>`).join("")}</div>`;
+
+  document.getElementById("view-semaine").innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER JOURNÉE
+// ═══════════════════════════════════════════════════════════
+function renderJour() {
+  const i=jourSeulIndex;
+  const j=state.jours[i];
+  const totaux=state.jours.map(calcJour);
+  const tot=calcJour(j);
+  const dj=tot!==null?tot-CIBLE_JOUR:null;
+  const issues=checkPlages(j);
+  const suggest=suggestDepart(j);
+  const sc=statusColor(dj);
+
+  // Sélecteur jours
+  let html=`<div class="card">
+    <div class="label-small mb-10">Jour</div>
+    <div class="flex flex-wrap gap-8">
+      ${JOURS.map((nom,idx)=>`
+        <button class="btn tab ${idx===i?"active":"inactive"}" style="padding:6px 13px;font-size:12px;" onclick="selectJour(${idx})">
+          ${nom}${totaux[idx]!==null?`<span style="margin-left:5px;font-size:10px;opacity:.65;">${fmtDur(totaux[idx])}</span>`:""}
+        </button>`).join("")}
+    </div>
+  </div>`;
+
+  // Saisie
+  html+=`<div class="card">
+    <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:14px;color:#fff;">${JOURS[i]}</div>
+    <div class="grid-4">
+      ${[["arrivee","Arrivée"],["pauseDebut","Pause début"],["pauseFin","Pause fin"],["depart","Départ"]].map(([field,lbl])=>`
+        <div>
+          <div class="label-small">${lbl}</div>
+          <input type="time" value="${j[field]}" onchange="updateFieldJour('${field}',this.value)" />
+        </div>`).join("")}
+    </div>
+    ${j.arrivee&&!j.depart&&suggest?`
+    <div style="margin-top:12px;padding:9px 13px;background:#1a1f2e;border-radius:8px;border-left:3px solid #f59e0b;">
+      <span style="font-size:13px;color:#f59e0b;">⟶ Pour faire ${fmtDur(CIBLE_JOUR)} exactement, partez à <strong>${toHHMM(suggest)}</strong></span>
+    </div>`:""}
+  </div>`;
+
+  // Résultats
+  if (tot!==null) {
+    const chipClass=dj===0?"chip-ok":dj>0?"chip-info":"chip-err";
+    const chipLabel=dj===0?"Quota exact ✓":dj>0?"En avance":"Quota non atteint";
+    html+=`<div class="grid-2">
+      <div class="card text-center" style="border-left:3px solid ${sc};">
+        <div style="font-size:10px;color:#475569;margin-bottom:8px;">DURÉE TRAVAILLÉE</div>
+        <div style="font-family:'Syne',sans-serif;font-size:36px;font-weight:800;color:${sc};">${fmtDur(tot)}</div>
+        <div style="font-size:11px;color:#475569;margin-top:4px;">Objectif : ${fmtDur(CIBLE_JOUR)}</div>
+      </div>
+      <div class="card text-center">
+        <div style="font-size:10px;color:#475569;margin-bottom:8px;">SOLDE JOURNÉE</div>
+        <div style="font-family:'Syne',sans-serif;font-size:36px;font-weight:800;color:${sc};">${fmtDur(dj,true)}</div>
+        <span class="badge ${chipClass}">${chipLabel}</span>
+      </div>
+    </div>`;
+  }
+
+  // Alertes plages
+  if (issues.length>0&&j.arrivee) {
+    html+=`<div style="padding:11px 13px;background:#1a1100;border:1px solid #92400e;border-radius:10px;">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;color:#fbbf24;margin-bottom:5px;">⚠ Plages non couvertes</div>
+      ${issues.map(iss=>`<div style="font-size:13px;color:#f59e0b;margin-top:3px;">• ${iss}</div>`).join("")}
+    </div>`;
+  }
+
+  // Timeline
+  if (j.arrivee) {
+    html+=`<div class="card">
+      <div style="font-size:11px;color:#475569;margin-bottom:14px;">VISUALISATION 07:00 → 20:00</div>
+      ${renderTimeline(j)}
+    </div>`;
+  }
+
+  // Plages obligatoires
+  html+=`<div class="grid-2">
+    ${PLAGES.map(p=>`
+      <div style="padding:11px 13px;background:#111827;border:1px solid #f59e0b33;border-radius:10px;display:flex;align-items:center;gap:10px;">
+        <div style="width:3px;height:30px;background:#f59e0b;border-radius:2px;flex-shrink:0;"></div>
+        <div>
+          <div style="font-size:10px;color:#f59e0b;margin-bottom:2px;">OBLIGATOIRE</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;">${p.debut} – ${p.fin}</div>
+          <div style="font-size:10px;color:#475569;">${p.label}</div>
+        </div>
+      </div>`).join("")}
+  </div>`;
+
+  document.getElementById("view-jour").innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════════
+// TIMELINE SVG
+// ═══════════════════════════════════════════════════════════
+function renderTimeline(j) {
+  const START=7*60, END=20*60, SPAN=END-START;
+  const pct=min=>((Math.max(START,Math.min(END,min))-START)/SPAN*100).toFixed(2);
+  const a=toMin(j.arrivee), d=toMin(j.depart);
+  const pb=toMin(j.pauseDebut), pf=toMin(j.pauseFin);
+  const hrs=[7,8,9,10,11,12,13,14,15,16,17,18,19,20];
+
+  let layers="";
+  // Plages obligatoires
+  PLAGES.forEach(p=>{
+    const s=toMin(p.debut),e=toMin(p.fin);
+    layers+=`<div class="tl-layer" style="left:${pct(s)}%;width:${pct(e)-pct(s)}%;background:#f59e0b22;border:1px solid #f59e0b55;"></div>`;
+  });
+  // Travail
+  if (a!==null&&d!==null&&d>a)
+    layers+=`<div class="tl-layer" style="left:${pct(a)}%;width:${pct(d)-pct(a)}%;background:#3b82f688;"></div>`;
+  // Pause
+  if (pb!==null&&pf!==null&&pf>pb)
+    layers+=`<div class="tl-layer" style="left:${pct(pb)}%;width:${pct(pf)-pct(pb)}%;background:#0a0f1e;border:1px dashed #475569;"></div>`;
+  // Marqueurs
+  let markers="";
+  if (a!==null)
+    markers+=`<div class="tl-marker" style="left:${pct(a)}%;">
+      <div class="tl-marker-line" style="background:#22c55e;"></div>
+      <div class="tl-marker-label" style="color:#22c55e;">${j.arrivee}</div>
+    </div>`;
+  if (d!==null)
+    markers+=`<div class="tl-marker" style="left:${pct(d)}%;">
+      <div class="tl-marker-line" style="background:#ef4444;"></div>
+      <div class="tl-marker-label" style="color:#ef4444;">${j.depart}</div>
+    </div>`;
+  // Heures
+  let hLabels=hrs.map(h=>`<div class="tl-hour" style="left:${pct(h*60)}%;">${h}h</div>`).join("");
+
+  return `<div class="timeline-wrap">
+    <div class="tl-bg"></div>
+    ${layers}${markers}${hLabels}
+    <div class="tl-legend">
+      <span><span style="color:#60a5fa;">■</span> Travail</span>
+      <span><span style="color:#92400e;">■</span> Obligatoire</span>
+      <span><span style="color:#475569;">╌</span> Pause</span>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════════════════════════
+function updateField(i, field, val) {
+  state.jours[i][field]=val;
+  saveState();
+  render();
+}
+function updateFieldJour(field, val) {
+  state.jours[jourSeulIndex][field]=val;
+  saveState();
+  render();
+}
+function selectJour(i) {
+  jourSeulIndex=i;
+  renderJour();
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER GLOBAL
+// ═══════════════════════════════════════════════════════════
+function render() {
+  if (mode==="semaine") renderSemaine();
+  else renderJour();
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+document.getElementById("btn-banner-reset").addEventListener("click",()=>{
+  if (confirm("Réinitialiser tous les horaires de la semaine ?")) doReset();
+});
+
+loadState();
+updateHeader();
+render();
+</script>
+</body>
+</html>
