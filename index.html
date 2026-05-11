@@ -39,7 +39,14 @@
     .label-small { font-size: 10px; color: #475569; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
     .progress-bar { height: 8px; background: #1e293b; border-radius: 4px; overflow: hidden; }
     .progress-fill { height: 100%; border-radius: 4px; transition: width .6s ease; }
-    .suggest { font-size: 11px; color: #f59e0b; margin-top: 3px; }
+    /* Suggestion cliquable */
+    .suggest-btn {
+      display: inline-block; margin-top: 4px; font-size: 11px; color: #f59e0b;
+      background: #1a1f00; border: 1px solid #f59e0b55; border-radius: 4px;
+      padding: 2px 7px; cursor: pointer; font-family: 'DM Mono', monospace;
+      transition: background .15s;
+    }
+    .suggest-btn:active { background: #2a2f00; }
     .hidden { display: none !important; }
     .flex { display: flex; }
     .flex-col { flex-direction: column; }
@@ -47,22 +54,12 @@
     .gap-8 { gap: 8px; }
     .gap-10 { gap: 10px; }
     .gap-12 { gap: 12px; }
-    .gap-14 { gap: 14px; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
     .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
     .grid-jour { display: grid; grid-template-columns: 82px 1fr; gap: 12px; align-items: start; }
     .text-center { text-align: center; }
-    .mt-4 { margin-top: 4px; }
-    .mt-6 { margin-top: 6px; }
-    .mt-8 { margin-top: 8px; }
-    .mt-10 { margin-top: 10px; }
-    .mt-12 { margin-top: 12px; }
-    .mt-14 { margin-top: 14px; }
-    .mb-6 { margin-bottom: 6px; }
-    .mb-8 { margin-bottom: 8px; }
     .mb-10 { margin-bottom: 10px; }
-    .mb-14 { margin-bottom: 14px; }
     #app { display: flex; flex-direction: column; min-height: 100vh; }
     header { border-bottom: 1px solid #1e293b; padding: 16px 18px 14px; background: #080d18; position: sticky; top: 0; z-index: 10; }
     .header-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
@@ -73,17 +70,15 @@
     .week-status { font-size: 10px; color: #475569; }
     .week-status.old { color: #f59e0b; }
     .week-label { font-size: 11px; color: #94a3b8; font-family: 'Syne', sans-serif; font-weight: 700; }
-    #save-flash { font-size: 10px; transition: opacity .4s; }
+    #save-flash { font-size: 10px; }
     #banner-newweek { margin-top: 10px; padding: 10px 14px; background: #1a1100; border: 1px solid #92400e; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
     #banner-newweek span { font-size: 12px; color: #fbbf24; }
     main { flex: 1; max-width: 860px; width: 100%; margin: 0 auto; padding: 18px 14px 40px; }
     .tabs-row { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; align-items: center; }
     .section { display: flex; flex-direction: column; gap: 12px; }
-    /* Jour card */
     .jour-nom { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; color: #fff; }
     .jour-total { font-size: 18px; font-weight: 500; margin-top: 4px; }
     .jour-cible { font-size: 10px; color: #475569; }
-    /* Timeline */
     .timeline-wrap { position: relative; height: 72px; }
     .tl-bg { position: absolute; top: 24px; left: 0; right: 0; height: 16px; background: #1e293b; border-radius: 4px; }
     .tl-layer { position: absolute; top: 24px; height: 16px; border-radius: 2px; }
@@ -104,12 +99,11 @@
 </head>
 <body>
 <div id="app">
-  <!-- HEADER -->
   <header>
     <div class="header-top">
       <div>
         <div class="logo">⏱ Chrono<span>Contrat</span></div>
-        <div class="logo-sub">Contrat 39h · Présence 09:30–12:00 et 14:00–16:30</div>
+        <div class="logo-sub">Contrat 39h · Présence 09:30–12:00 et 14:00–16:30 · Pause payée 20min</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
         <div class="week-info">
@@ -127,9 +121,7 @@
     </div>
   </header>
 
-  <!-- MAIN -->
   <main>
-    <!-- Tabs -->
     <div class="tabs-row">
       <button class="btn tab active" id="tab-semaine" onclick="switchMode('semaine')">Vue Semaine</button>
       <button class="btn tab inactive" id="tab-jour" onclick="switchMode('jour')">Vue Journée</button>
@@ -142,11 +134,7 @@
         </div>
       </div>
     </div>
-
-    <!-- VUE SEMAINE -->
     <div id="view-semaine" class="section"></div>
-
-    <!-- VUE JOURNÉE -->
     <div id="view-jour" class="section hidden"></div>
   </main>
 </div>
@@ -157,28 +145,27 @@
 // ═══════════════════════════════════════════════════════════
 const JOURS = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi"];
 const CIBLE_SEMAINE = 39 * 60;
-const CIBLE_JOUR = Math.round((39 * 60) / 5); // 468 min
+// 20min de pause payée comptée dans le quota → objectif effectif = 7h48 - 20min = 7h28 = 448min
+const PAUSE_PAYEE = 20;
+const CIBLE_JOUR = Math.round((39 * 60) / 5) - PAUSE_PAYEE; // 468 - 20 = 448 min = 7h28
 const PLAGES = [
   { label: "Présence matin", debut: "09:30", fin: "12:00" },
   { label: "Présence après-midi", debut: "14:00", fin: "16:30" },
 ];
-const LS_KEY = "chronocontrat_v2";
+const LS_KEY = "chronocontrat_v3";
 
 // ═══════════════════════════════════════════════════════════
 // ÉTAT
 // ═══════════════════════════════════════════════════════════
 let mode = "semaine";
 let jourSeulIndex = 0;
-let resetConfirmVisible = false;
 let flashTimer = null;
 
-const defaultJour = () => ({ arrivee:"", depart:"", pauseDebut:"12:00", pauseFin:"13:00" });
+// Pause repas par défaut : 12h15 → 13h00 (45min)
+const defaultJour = () => ({ arrivee:"", depart:"", pauseDebut:"12:15", pauseFin:"13:00" });
 const defaultSemaine = () => JOURS.map(() => defaultJour());
 
-let state = {
-  weekKey: getISOWeekKey(),
-  jours: defaultSemaine(),
-};
+let state = { weekKey: getISOWeekKey(), jours: defaultSemaine() };
 
 // ═══════════════════════════════════════════════════════════
 // UTILS TEMPS
@@ -199,13 +186,18 @@ function fmtDur(min, sign=false) {
   const h=Math.floor(Math.abs(min)/60), m=Math.abs(min)%60;
   return s+h+"h"+String(m).padStart(2,"0");
 }
+
+// Calcul du temps travaillé effectif (hors pause repas).
+// La pause payée de 20min est déjà intégrée dans CIBLE_JOUR réduit,
+// donc on ne la soustrait PAS du temps brut.
 function calcJour(j) {
   const a=toMin(j.arrivee), d=toMin(j.depart);
   if (a===null||d===null||d<=a) return null;
   const pb=toMin(j.pauseDebut), pf=toMin(j.pauseFin);
   const pause = pb!==null&&pf!==null&&pf>pb ? pf-pb : 0;
-  return d-a-pause;
+  return d-a-pause; // temps brut hors pause repas
 }
+
 function checkPlages(j) {
   const a=toMin(j.arrivee), d=toMin(j.depart);
   const pb=toMin(j.pauseDebut), pf=toMin(j.pauseFin);
@@ -217,12 +209,23 @@ function checkPlages(j) {
     return Math.min(d,pF)-Math.max(a,pD)-ap < pF-pD;
   }).map(p=>p.label);
 }
+
+// Suggestion départ à partir de l'arrivée
 function suggestDepart(j, cible=CIBLE_JOUR) {
   const a=toMin(j.arrivee); if(a===null) return null;
   const pb=toMin(j.pauseDebut), pf=toMin(j.pauseFin);
-  const pause = pb!==null&&pf!==null&&pf>pb ? pf-pb : 60;
+  const pause = pb!==null&&pf!==null&&pf>pb ? pf-pb : 45;
   return a+cible+pause;
 }
+
+// Suggestion arrivée à partir du départ
+function suggestArrivee(j, cible=CIBLE_JOUR) {
+  const d=toMin(j.depart); if(d===null) return null;
+  const pb=toMin(j.pauseDebut), pf=toMin(j.pauseFin);
+  const pause = pb!==null&&pf!==null&&pf>pb ? pf-pb : 45;
+  return d-cible-pause;
+}
+
 function statusColor(delta) {
   if (delta===null) return "#64748b";
   if (Math.abs(delta)<5) return "#22c55e";
@@ -265,7 +268,6 @@ function loadState() {
 }
 function saveState() {
   try { localStorage.setItem(LS_KEY,JSON.stringify(state)); } catch(e){}
-  // Flash
   const el=document.getElementById("save-flash");
   el.classList.remove("hidden","flash-anim");
   void el.offsetWidth;
@@ -288,10 +290,7 @@ function hideResetConfirm() {
 function doReset() {
   state.jours=defaultSemaine();
   state.weekKey=getISOWeekKey();
-  saveState();
-  hideResetConfirm();
-  updateHeader();
-  render();
+  saveState(); hideResetConfirm(); updateHeader(); render();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -318,6 +317,31 @@ function updateHeader() {
   ws.className="week-status"+(isOld?" old":"");
   const banner=document.getElementById("banner-newweek");
   if (isOld) banner.classList.remove("hidden"); else banner.classList.add("hidden");
+}
+
+// ═══════════════════════════════════════════════════════════
+// ACTIONS CHAMPS
+// ═══════════════════════════════════════════════════════════
+function updateField(i, field, val) {
+  state.jours[i][field]=val;
+  saveState(); render();
+}
+function updateFieldJour(field, val) {
+  state.jours[jourSeulIndex][field]=val;
+  saveState(); render();
+}
+// Appliquer une suggestion cliquée (vue semaine)
+function applySuggest(i, field, val) {
+  state.jours[i][field]=val;
+  saveState(); render();
+}
+// Appliquer une suggestion cliquée (vue journée)
+function applySuggestJour(field, val) {
+  state.jours[jourSeulIndex][field]=val;
+  saveState(); render();
+}
+function selectJour(i) {
+  jourSeulIndex=i; renderJour();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -359,7 +383,9 @@ function renderSemaine() {
     const tot=totaux[i];
     const dj=tot!==null?tot-CIBLE_JOUR:null;
     const issues=checkPlages(j);
-    const suggest=suggestDepart(j, restants>0&&tot===null?moy:CIBLE_JOUR);
+    const cibleJour=restants>0&&tot===null?moy:CIBLE_JOUR;
+    const sugDepart=suggestDepart(j, cibleJour);
+    const sugArrivee=suggestArrivee(j, cibleJour);
     const sc=statusColor(dj);
 
     html+=`
@@ -377,12 +403,19 @@ function renderSemaine() {
           <div class="grid-4" style="margin-bottom:8px;">
             ${["arrivee","pauseDebut","pauseFin","depart"].map((field,fi)=>{
               const labels=["Arrivée","Pause ↓","Pause ↑","Départ"];
-              const warn=field==="arrivee"&&j.arrivee&&toMin(j.arrivee)>toMin("09:30")?`<div style="font-size:9px;color:#f87171;margin-top:2px;">Après 09:30</div>`:"";
-              const sug=field==="depart"&&j.arrivee&&!j.depart&&suggest?`<div class="suggest">→ ${toHHMM(suggest)}</div>`:"";
+              let extra="";
+              if (field==="arrivee"&&j.arrivee&&toMin(j.arrivee)>toMin("09:30"))
+                extra=`<div style="font-size:9px;color:#f87171;margin-top:2px;">Après 09:30</div>`;
+              // Suggestion départ cliquable
+              if (field==="depart"&&j.arrivee&&!j.depart&&sugDepart)
+                extra=`<span class="suggest-btn" onclick="applySuggest(${i},'depart','${toHHMM(sugDepart)}')">→ ${toHHMM(sugDepart)}</span>`;
+              // Suggestion arrivée cliquable
+              if (field==="arrivee"&&!j.arrivee&&j.depart&&sugArrivee)
+                extra=`<span class="suggest-btn" onclick="applySuggest(${i},'arrivee','${toHHMM(sugArrivee)}')">→ ${toHHMM(sugArrivee)}</span>`;
               return `<div>
                 <div class="label-small">${labels[fi]}</div>
                 <input type="time" value="${j[field]}" onchange="updateField(${i},'${field}',this.value)" />
-                ${warn}${sug}
+                ${extra}
               </div>`;
             }).join("")}
           </div>
@@ -403,6 +436,11 @@ function renderSemaine() {
       <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:${r.color};">${r.val}</div>
     </div>`).join("")}</div>`;
 
+  // Info pause payée
+  html+=`<div style="padding:10px 14px;background:#0f1a0f;border:1px solid #166534;border-radius:10px;font-size:11px;color:#4ade80;">
+    ℹ️ La pause journalière de <strong>20min</strong> est comptée dans votre temps de travail contractuel. L'objectif affiché est donc <strong>${fmtDur(CIBLE_JOUR)}</strong> de présence effective (au lieu de 7h48).
+  </div>`;
+
   document.getElementById("view-semaine").innerHTML=html;
 }
 
@@ -416,10 +454,10 @@ function renderJour() {
   const tot=calcJour(j);
   const dj=tot!==null?tot-CIBLE_JOUR:null;
   const issues=checkPlages(j);
-  const suggest=suggestDepart(j);
+  const sugDepart=suggestDepart(j);
+  const sugArrivee=suggestArrivee(j);
   const sc=statusColor(dj);
 
-  // Sélecteur jours
   let html=`<div class="card">
     <div class="label-small mb-10">Jour</div>
     <div class="flex flex-wrap gap-8">
@@ -430,23 +468,29 @@ function renderJour() {
     </div>
   </div>`;
 
-  // Saisie
   html+=`<div class="card">
     <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:14px;color:#fff;">${JOURS[i]}</div>
     <div class="grid-4">
-      ${[["arrivee","Arrivée"],["pauseDebut","Pause début"],["pauseFin","Pause fin"],["depart","Départ"]].map(([field,lbl])=>`
-        <div>
+      ${[["arrivee","Arrivée"],["pauseDebut","Pause début"],["pauseFin","Pause fin"],["depart","Départ"]].map(([field,lbl])=>{
+        let extra="";
+        if (field==="depart"&&j.arrivee&&!j.depart&&sugDepart)
+          extra=`<span class="suggest-btn" onclick="applySuggestJour('depart','${toHHMM(sugDepart)}')">→ ${toHHMM(sugDepart)}</span>`;
+        if (field==="arrivee"&&!j.arrivee&&j.depart&&sugArrivee)
+          extra=`<span class="suggest-btn" onclick="applySuggestJour('arrivee','${toHHMM(sugArrivee)}')">→ ${toHHMM(sugArrivee)}</span>`;
+        return `<div>
           <div class="label-small">${lbl}</div>
           <input type="time" value="${j[field]}" onchange="updateFieldJour('${field}',this.value)" />
-        </div>`).join("")}
+          ${extra}
+        </div>`;
+      }).join("")}
     </div>
-    ${j.arrivee&&!j.depart&&suggest?`
-    <div style="margin-top:12px;padding:9px 13px;background:#1a1f2e;border-radius:8px;border-left:3px solid #f59e0b;">
-      <span style="font-size:13px;color:#f59e0b;">⟶ Pour faire ${fmtDur(CIBLE_JOUR)} exactement, partez à <strong>${toHHMM(suggest)}</strong></span>
+    ${(j.arrivee&&!j.depart&&sugDepart)||(j.depart&&!j.arrivee&&sugArrivee)?`
+    <div style="margin-top:12px;padding:9px 13px;background:#1a1f2e;border-radius:8px;border-left:3px solid #f59e0b;font-size:12px;color:#f59e0b;">
+      ${j.arrivee&&!j.depart&&sugDepart?`⟶ Pour faire <strong>${fmtDur(CIBLE_JOUR)}</strong>, partez à <strong>${toHHMM(sugDepart)}</strong>`:""}
+      ${j.depart&&!j.arrivee&&sugArrivee?`⟶ Pour faire <strong>${fmtDur(CIBLE_JOUR)}</strong>, arrivez à <strong>${toHHMM(sugArrivee)}</strong>`:""}
     </div>`:""}
   </div>`;
 
-  // Résultats
   if (tot!==null) {
     const chipClass=dj===0?"chip-ok":dj>0?"chip-info":"chip-err";
     const chipLabel=dj===0?"Quota exact ✓":dj>0?"En avance":"Quota non atteint";
@@ -464,7 +508,6 @@ function renderJour() {
     </div>`;
   }
 
-  // Alertes plages
   if (issues.length>0&&j.arrivee) {
     html+=`<div style="padding:11px 13px;background:#1a1100;border:1px solid #92400e;border-radius:10px;">
       <div style="font-family:'Syne',sans-serif;font-weight:700;color:#fbbf24;margin-bottom:5px;">⚠ Plages non couvertes</div>
@@ -472,7 +515,6 @@ function renderJour() {
     </div>`;
   }
 
-  // Timeline
   if (j.arrivee) {
     html+=`<div class="card">
       <div style="font-size:11px;color:#475569;margin-bottom:14px;">VISUALISATION 07:00 → 20:00</div>
@@ -480,7 +522,6 @@ function renderJour() {
     </div>`;
   }
 
-  // Plages obligatoires
   html+=`<div class="grid-2">
     ${PLAGES.map(p=>`
       <div style="padding:11px 13px;background:#111827;border:1px solid #f59e0b33;border-radius:10px;display:flex;align-items:center;gap:10px;">
@@ -493,11 +534,15 @@ function renderJour() {
       </div>`).join("")}
   </div>`;
 
+  html+=`<div style="padding:10px 14px;background:#0f1a0f;border:1px solid #166534;border-radius:10px;font-size:11px;color:#4ade80;">
+    ℹ️ Pause payée <strong>20min</strong> incluse — objectif effectif : <strong>${fmtDur(CIBLE_JOUR)}</strong> · Pause repas par défaut : <strong>12h15–13h00</strong>
+  </div>`;
+
   document.getElementById("view-jour").innerHTML=html;
 }
 
 // ═══════════════════════════════════════════════════════════
-// TIMELINE SVG
+// TIMELINE
 // ═══════════════════════════════════════════════════════════
 function renderTimeline(j) {
   const START=7*60, END=20*60, SPAN=END-START;
@@ -507,35 +552,25 @@ function renderTimeline(j) {
   const hrs=[7,8,9,10,11,12,13,14,15,16,17,18,19,20];
 
   let layers="";
-  // Plages obligatoires
   PLAGES.forEach(p=>{
     const s=toMin(p.debut),e=toMin(p.fin);
     layers+=`<div class="tl-layer" style="left:${pct(s)}%;width:${pct(e)-pct(s)}%;background:#f59e0b22;border:1px solid #f59e0b55;"></div>`;
   });
-  // Travail
   if (a!==null&&d!==null&&d>a)
     layers+=`<div class="tl-layer" style="left:${pct(a)}%;width:${pct(d)-pct(a)}%;background:#3b82f688;"></div>`;
-  // Pause
   if (pb!==null&&pf!==null&&pf>pb)
     layers+=`<div class="tl-layer" style="left:${pct(pb)}%;width:${pct(pf)-pct(pb)}%;background:#0a0f1e;border:1px dashed #475569;"></div>`;
-  // Marqueurs
+
   let markers="";
   if (a!==null)
-    markers+=`<div class="tl-marker" style="left:${pct(a)}%;">
-      <div class="tl-marker-line" style="background:#22c55e;"></div>
-      <div class="tl-marker-label" style="color:#22c55e;">${j.arrivee}</div>
-    </div>`;
+    markers+=`<div class="tl-marker" style="left:${pct(a)}%;"><div class="tl-marker-line" style="background:#22c55e;"></div><div class="tl-marker-label" style="color:#22c55e;">${j.arrivee}</div></div>`;
   if (d!==null)
-    markers+=`<div class="tl-marker" style="left:${pct(d)}%;">
-      <div class="tl-marker-line" style="background:#ef4444;"></div>
-      <div class="tl-marker-label" style="color:#ef4444;">${j.depart}</div>
-    </div>`;
-  // Heures
-  let hLabels=hrs.map(h=>`<div class="tl-hour" style="left:${pct(h*60)}%;">${h}h</div>`).join("");
+    markers+=`<div class="tl-marker" style="left:${pct(d)}%;"><div class="tl-marker-line" style="background:#ef4444;"></div><div class="tl-marker-label" style="color:#ef4444;">${j.depart}</div></div>`;
+
+  const hLabels=hrs.map(h=>`<div class="tl-hour" style="left:${pct(h*60)}%;">${h}h</div>`).join("");
 
   return `<div class="timeline-wrap">
-    <div class="tl-bg"></div>
-    ${layers}${markers}${hLabels}
+    <div class="tl-bg"></div>${layers}${markers}${hLabels}
     <div class="tl-legend">
       <span><span style="color:#60a5fa;">■</span> Travail</span>
       <span><span style="color:#92400e;">■</span> Obligatoire</span>
@@ -545,34 +580,13 @@ function renderTimeline(j) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// ACTIONS
-// ═══════════════════════════════════════════════════════════
-function updateField(i, field, val) {
-  state.jours[i][field]=val;
-  saveState();
-  render();
-}
-function updateFieldJour(field, val) {
-  state.jours[jourSeulIndex][field]=val;
-  saveState();
-  render();
-}
-function selectJour(i) {
-  jourSeulIndex=i;
-  renderJour();
-}
-
-// ═══════════════════════════════════════════════════════════
-// RENDER GLOBAL
+// RENDER GLOBAL + INIT
 // ═══════════════════════════════════════════════════════════
 function render() {
   if (mode==="semaine") renderSemaine();
   else renderJour();
 }
 
-// ═══════════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════════
 document.getElementById("btn-banner-reset").addEventListener("click",()=>{
   if (confirm("Réinitialiser tous les horaires de la semaine ?")) doReset();
 });
