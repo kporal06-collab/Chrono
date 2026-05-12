@@ -39,7 +39,6 @@
     .label-small { font-size: 10px; color: #475569; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
     .progress-bar { height: 8px; background: #1e293b; border-radius: 4px; overflow: hidden; }
     .progress-fill { height: 100%; border-radius: 4px; transition: width .6s ease; }
-    /* Suggestion cliquable */
     .suggest-btn {
       display: inline-block; margin-top: 4px; font-size: 11px; color: #f59e0b;
       background: #1a1f00; border: 1px solid #f59e0b55; border-radius: 4px;
@@ -49,11 +48,8 @@
     .suggest-btn:active { background: #2a2f00; }
     .hidden { display: none !important; }
     .flex { display: flex; }
-    .flex-col { flex-direction: column; }
     .flex-wrap { flex-wrap: wrap; }
     .gap-8 { gap: 8px; }
-    .gap-10 { gap: 10px; }
-    .gap-12 { gap: 12px; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
     .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
@@ -66,7 +62,6 @@
     .logo { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: #fff; }
     .logo span { color: #f59e0b; }
     .logo-sub { font-size: 10px; color: #475569; margin-top: 2px; }
-    .week-info { text-align: right; }
     .week-status { font-size: 10px; color: #475569; }
     .week-status.old { color: #f59e0b; }
     .week-label { font-size: 11px; color: #94a3b8; font-family: 'Syne', sans-serif; font-weight: 700; }
@@ -106,7 +101,7 @@
         <div class="logo-sub">Contrat 39h · Présence 09:30–12:00 et 14:00–16:30 · Pause payée 20min</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
-        <div class="week-info">
+        <div style="text-align:right;">
           <div class="week-status" id="week-status-label">📅 Semaine en cours</div>
           <div class="week-label" id="week-label-text">—</div>
         </div>
@@ -115,9 +110,7 @@
     </div>
     <div id="banner-newweek" class="hidden slide-down">
       <span>📅 Nouvelle semaine détectée — réinitialiser ?</span>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-danger" id="btn-banner-reset">Nouvelle semaine</button>
-      </div>
+      <button class="btn btn-danger" id="btn-banner-reset">Nouvelle semaine</button>
     </div>
   </header>
 
@@ -127,7 +120,7 @@
       <button class="btn tab inactive" id="tab-jour" onclick="switchMode('jour')">Vue Journée</button>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
         <button class="btn btn-ghost" id="btn-reset-show" style="font-size:12px;" onclick="showResetConfirm()">↺ Réinitialiser</button>
-        <div id="reset-confirm" class="hidden slide-down" style="display:flex;gap:8px;align-items:center;">
+        <div id="reset-confirm" class="hidden" style="display:flex;gap:8px;align-items:center;">
           <span style="font-size:11px;color:#f87171;">Effacer ?</span>
           <button class="btn btn-danger" onclick="doReset()">Oui</button>
           <button class="btn btn-ghost" onclick="hideResetConfirm()">Non</button>
@@ -144,15 +137,22 @@
 // CONSTANTES
 // ═══════════════════════════════════════════════════════════
 const JOURS = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi"];
-const CIBLE_SEMAINE = 39 * 60;
-// 20min de pause payée comptée dans le quota → objectif effectif = 7h48 - 20min = 7h28 = 448min
+
+// 20min de pause payée : réduit l'objectif journalier
+// 39h / 5j = 7h48 = 468min → 468 - 20 = 448min = 7h28
 const PAUSE_PAYEE = 20;
-const CIBLE_JOUR = Math.round((39 * 60) / 5) - PAUSE_PAYEE; // 468 - 20 = 448 min = 7h28
+const CIBLE_JOUR = 468 - PAUSE_PAYEE; // 448 min = 7h28
+
+// ✅ FIX bug 2 : la cible semaine tient compte de la pause payée × 5 jours
+const CIBLE_SEMAINE = CIBLE_JOUR * 5; // 2240 min = 37h20
+
+const PAUSE_REPAS_DEFAUT = 45; // 12h15 → 13h00
+
 const PLAGES = [
   { label: "Présence matin", debut: "09:30", fin: "12:00" },
   { label: "Présence après-midi", debut: "14:00", fin: "16:30" },
 ];
-const LS_KEY = "chronocontrat_v3";
+const LS_KEY = "chronocontrat_v4";
 
 // ═══════════════════════════════════════════════════════════
 // ÉTAT
@@ -173,11 +173,12 @@ let state = { weekKey: getISOWeekKey(), jours: defaultSemaine() };
 function toMin(hhmm) {
   if (!hhmm) return null;
   const [h,m] = hhmm.split(":").map(Number);
+  if (isNaN(h)||isNaN(m)) return null;
   return h*60+m;
 }
 function toHHMM(min) {
-  if (min===null||isNaN(min)) return "--:--";
-  const h=Math.floor(Math.abs(min)/60), m=Math.abs(min)%60;
+  if (min===null||isNaN(min)||min<0) return "--:--";
+  const h=Math.floor(min/60), m=min%60;
   return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
 }
 function fmtDur(min, sign=false) {
@@ -187,43 +188,55 @@ function fmtDur(min, sign=false) {
   return s+h+"h"+String(m).padStart(2,"0");
 }
 
+// ✅ FIX bug 1 : calcul de la pause repas réelle, sans fallback arbitraire
+// Si les deux champs pause sont renseignés et cohérents → vraie durée
+// Sinon → fallback PAUSE_REPAS_DEFAUT (45min)
+function getPauseRepas(j) {
+  const pb=toMin(j.pauseDebut), pf=toMin(j.pauseFin);
+  if (pb!==null && pf!==null && pf>pb) return pf-pb;
+  return PAUSE_REPAS_DEFAUT;
+}
+
 // Calcul du temps travaillé effectif (hors pause repas).
-// La pause payée de 20min est déjà intégrée dans CIBLE_JOUR réduit,
-// donc on ne la soustrait PAS du temps brut.
+// La pause payée de 20min est intégrée dans CIBLE_JOUR réduit.
 function calcJour(j) {
   const a=toMin(j.arrivee), d=toMin(j.depart);
   if (a===null||d===null||d<=a) return null;
-  const pb=toMin(j.pauseDebut), pf=toMin(j.pauseFin);
-  const pause = pb!==null&&pf!==null&&pf>pb ? pf-pb : 0;
-  return d-a-pause; // temps brut hors pause repas
+  const pause = getPauseRepas(j);
+  return d-a-pause;
 }
 
+// ✅ FIX bug 4 : n'alerte que si arrivée ET départ sont tous les deux renseignés
 function checkPlages(j) {
   const a=toMin(j.arrivee), d=toMin(j.depart);
+  // Pas d'alerte si l'un des deux manque
+  if (a===null||d===null) return [];
   const pb=toMin(j.pauseDebut), pf=toMin(j.pauseFin);
   return PLAGES.filter(p=>{
     const pD=toMin(p.debut), pF=toMin(p.fin);
-    if (a===null||d===null) return true;
     let ap=0;
-    if (pb!==null&&pf!==null) { const cd=Math.max(pb,pD),cf=Math.min(pf,pF); if(cf>cd)ap=cf-cd; }
-    return Math.min(d,pF)-Math.max(a,pD)-ap < pF-pD;
+    if (pb!==null&&pf!==null&&pf>pb) {
+      const cd=Math.max(pb,pD), cf=Math.min(pf,pF);
+      if (cf>cd) ap=cf-cd;
+    }
+    const present = Math.min(d,pF)-Math.max(a,pD)-ap;
+    return present < pF-pD;
   }).map(p=>p.label);
 }
 
-// Suggestion départ à partir de l'arrivée
+// ✅ FIX bug 1 : suggestion départ — utilise getPauseRepas() cohérent
 function suggestDepart(j, cible=CIBLE_JOUR) {
-  const a=toMin(j.arrivee); if(a===null) return null;
-  const pb=toMin(j.pauseDebut), pf=toMin(j.pauseFin);
-  const pause = pb!==null&&pf!==null&&pf>pb ? pf-pb : 45;
-  return a+cible+pause;
+  const a=toMin(j.arrivee);
+  if (a===null) return null;
+  return a + cible + getPauseRepas(j);
 }
 
-// Suggestion arrivée à partir du départ
+// ✅ FIX bug 1 : suggestion arrivée — utilise getPauseRepas() cohérent
 function suggestArrivee(j, cible=CIBLE_JOUR) {
-  const d=toMin(j.depart); if(d===null) return null;
-  const pb=toMin(j.pauseDebut), pf=toMin(j.pauseFin);
-  const pause = pb!==null&&pf!==null&&pf>pb ? pf-pb : 45;
-  return d-cible-pause;
+  const d=toMin(j.depart);
+  if (d===null) return null;
+  const result = d - cible - getPauseRepas(j);
+  return result >= 0 ? result : null;
 }
 
 function statusColor(delta) {
@@ -330,12 +343,10 @@ function updateFieldJour(field, val) {
   state.jours[jourSeulIndex][field]=val;
   saveState(); render();
 }
-// Appliquer une suggestion cliquée (vue semaine)
 function applySuggest(i, field, val) {
   state.jours[i][field]=val;
   saveState(); render();
 }
-// Appliquer une suggestion cliquée (vue journée)
 function applySuggestJour(field, val) {
   state.jours[jourSeulIndex][field]=val;
   saveState(); render();
@@ -350,10 +361,12 @@ function selectJour(i) {
 function renderSemaine() {
   const totaux=state.jours.map(calcJour);
   const total=totaux.reduce((a,t)=>t!==null?a+t:a,0);
+  // ✅ FIX bug 2 : delta par rapport à CIBLE_SEMAINE = 5 × CIBLE_JOUR (37h20)
   const delta=total-CIBLE_SEMAINE;
   const faits=totaux.filter(t=>t!==null).length;
   const restants=5-faits;
-  const minRestantes=CIBLE_SEMAINE-total;
+  // ✅ FIX bug 3 : restant calculé sur la bonne base
+  const minRestantes=Math.max(0, CIBLE_SEMAINE-total);
   const moy=restants>0?Math.ceil(minRestantes/restants):0;
   const pct=Math.min(100,(total/CIBLE_SEMAINE)*100);
   const pctColor=pct>=100?"#22c55e":pct>=70?"#f59e0b":"#3b82f6";
@@ -366,7 +379,7 @@ function renderSemaine() {
       <div>
         <div class="label-small">TOTAL SEMAINE</div>
         <div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:#fff;">
-          ${fmtDur(total)}<span style="font-size:14px;color:#475569;margin-left:8px;">/ 39h00</span>
+          ${fmtDur(total)}<span style="font-size:14px;color:#475569;margin-left:8px;">/ ${fmtDur(CIBLE_SEMAINE)}</span>
         </div>
       </div>
       <span class="badge ${deltaChip}">${deltaLabel}</span>
@@ -406,10 +419,8 @@ function renderSemaine() {
               let extra="";
               if (field==="arrivee"&&j.arrivee&&toMin(j.arrivee)>toMin("09:30"))
                 extra=`<div style="font-size:9px;color:#f87171;margin-top:2px;">Après 09:30</div>`;
-              // Suggestion départ cliquable
               if (field==="depart"&&j.arrivee&&!j.depart&&sugDepart)
                 extra=`<span class="suggest-btn" onclick="applySuggest(${i},'depart','${toHHMM(sugDepart)}')">→ ${toHHMM(sugDepart)}</span>`;
-              // Suggestion arrivée cliquable
               if (field==="arrivee"&&!j.arrivee&&j.depart&&sugArrivee)
                 extra=`<span class="suggest-btn" onclick="applySuggest(${i},'arrivee','${toHHMM(sugArrivee)}')">→ ${toHHMM(sugArrivee)}</span>`;
               return `<div>
@@ -419,7 +430,7 @@ function renderSemaine() {
               </div>`;
             }).join("")}
           </div>
-          ${issues.length>0&&j.arrivee?`<div style="display:flex;gap:6px;flex-wrap:wrap;">${issues.map(iss=>`<span class="badge chip-warn" style="font-size:10px;">⚠ ${iss}</span>`).join("")}</div>`:""}
+          ${issues.length>0?`<div style="display:flex;gap:6px;flex-wrap:wrap;">${issues.map(iss=>`<span class="badge chip-warn" style="font-size:10px;">⚠ ${iss}</span>`).join("")}</div>`:""}
         </div>
       </div>
     </div>`;
@@ -436,9 +447,8 @@ function renderSemaine() {
       <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:${r.color};">${r.val}</div>
     </div>`).join("")}</div>`;
 
-  // Info pause payée
-  html+=`<div style="padding:10px 14px;background:#0f1a0f;border:1px solid #166534;border-radius:10px;font-size:11px;color:#4ade80;">
-    ℹ️ La pause journalière de <strong>20min</strong> est comptée dans votre temps de travail contractuel. L'objectif affiché est donc <strong>${fmtDur(CIBLE_JOUR)}</strong> de présence effective (au lieu de 7h48).
+  html+=`<div style="padding:10px 14px;background:#0f1a0f;border:1px solid #166534;border-radius:10px;font-size:11px;color:#4ade80;line-height:1.6;">
+    ℹ️ Pause payée <strong>20min/j</strong> incluse dans le contrat — objectif effectif : <strong>${fmtDur(CIBLE_JOUR)}/j</strong> · <strong>${fmtDur(CIBLE_SEMAINE)}/sem</strong> · Pause repas par défaut : <strong>12h15–13h00</strong>
   </div>`;
 
   document.getElementById("view-semaine").innerHTML=html;
@@ -508,7 +518,7 @@ function renderJour() {
     </div>`;
   }
 
-  if (issues.length>0&&j.arrivee) {
+  if (issues.length>0) {
     html+=`<div style="padding:11px 13px;background:#1a1100;border:1px solid #92400e;border-radius:10px;">
       <div style="font-family:'Syne',sans-serif;font-weight:700;color:#fbbf24;margin-bottom:5px;">⚠ Plages non couvertes</div>
       ${issues.map(iss=>`<div style="font-size:13px;color:#f59e0b;margin-top:3px;">• ${iss}</div>`).join("")}
@@ -534,8 +544,8 @@ function renderJour() {
       </div>`).join("")}
   </div>`;
 
-  html+=`<div style="padding:10px 14px;background:#0f1a0f;border:1px solid #166534;border-radius:10px;font-size:11px;color:#4ade80;">
-    ℹ️ Pause payée <strong>20min</strong> incluse — objectif effectif : <strong>${fmtDur(CIBLE_JOUR)}</strong> · Pause repas par défaut : <strong>12h15–13h00</strong>
+  html+=`<div style="padding:10px 14px;background:#0f1a0f;border:1px solid #166534;border-radius:10px;font-size:11px;color:#4ade80;line-height:1.6;">
+    ℹ️ Pause payée <strong>20min</strong> incluse — objectif : <strong>${fmtDur(CIBLE_JOUR)}</strong> · Pause repas par défaut : <strong>12h15–13h00 (45min)</strong>
   </div>`;
 
   document.getElementById("view-jour").innerHTML=html;
